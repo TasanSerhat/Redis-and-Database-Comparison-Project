@@ -30,7 +30,7 @@ Aynı ağır sorgu Spring Boot'un `@Cacheable` anotasyonu kullanılarak Redis ü
 ### Çalıştırma Adımları
 1. Projeyi bilgisayarınıza klonlayın:
    ```bash
-   git clone <repository_url>
+   git clone https://github.com/TasanSerhat/Redis-Sample-Project.git
    cd redis-benchmark
    ```
 2. Maven komutuyla uygulamayı başlatın:
