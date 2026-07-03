@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB vs Redis - Performans Analizi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --db-color: #ef4444; /* Kırmızı */
+            --redis-color: #10b981; /* Yeşil */
+            --accent-color: #3b82f6; /* Mavi */
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% -20%, #1e293b, #0f172a);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            margin-top: 0;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            margin-bottom: 40px;
+        }
+
+        .race-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            border: 1px solid var(--glass-border);
+        }
+
+        .lane {
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .lane:last-child {
+            margin-bottom: 0;
+        }
+
+        .lane-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .lane-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .db-label { color: var(--db-color); }
+        .redis-label { color: var(--redis-color); }
+
+        .time-display {
+            font-family: monospace;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 24px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 12px;
+            transition: width 0.1s linear;
+            position: relative;
+        }
+
+        .db-bar {
+            background: linear-gradient(90deg, #991b1b, var(--db-color));
+            box-shadow: 0 0 10px var(--db-color);
+        }
+
+        .redis-bar {
+            background: linear-gradient(90deg, #065f46, var(--redis-color));
+            box-shadow: 0 0 10px var(--redis-color);
+        }
+
+        .car {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+        }
+
+        /* --- YENİ EKLENEN LOG KONSOLU --- */
+        .log-console {
+            background: #000;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 30px;
+            text-align: left;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            color: #a3e635; /* Terminal Yeşili */
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: inset 0 0 10px rgba(0,0,0,1);
+        }
+
+        .log-entry { margin-bottom: 8px; border-bottom: 1px dashed #334155; padding-bottom: 5px; }
+        .log-time { color: #94a3b8; font-size: 0.8rem; margin-right: 10px; }
+        .log-db { color: #f87171; }
+        .log-redis { color: #34d399; }
+        .log-system { color: #60a5fa; }
+        .log-data { color: #facc15; font-size: 0.85rem; display: block; margin-top: 4px; margin-left: 20px;}
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 20px -3px rgba(59, 130, 246, 0.6);
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+        }
+
+        button:disabled {
+            background: #475569;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Performans Analizi</h1>
+        <p class="subtitle">Direct DB (Disk I/O) vs Redis Cache (In-Memory)</p>
+
+        <div class="race-track">
+            <div class="lane">
+                <div class="lane-header">
+                    <div class="lane-name db-label">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                        Veritabanı (Disk I/O)
+                    </div>
+                    <div class="time-display db-label"><span id="db-time">0</span> ms</div>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="db-bar" class="progress-bar db-bar">
+                        <span class="car">🔄</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lane">
+                <div class="lane-header">
+                    <div class="lane-name redis-label">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        Redis Cache
+                    </div>
+                    <div class="time-display redis-label"><span id="redis-time">0</span> ms</div>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="redis-bar" class="progress-bar redis-bar">
+                        <span class="car">⚡</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canlı Veri Akış Konsolu -->
+        <div class="log-console" id="log-console">
+            <div class="log-entry">
+                <span class="log-time" id="init-time"></span>
+                <span class="log-system">[SYSTEM]</span> Sistem Hazır. Test için bekleniyor...
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="start-btn" onclick="startRace()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                Canlı Analizi Başlat (user4999)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('init-time').innerText = new Date().toLocaleTimeString();
+        const emailPart = "user4999"; 
+
+        function appendLog(type, message, dataObj) {
+            const consoleEl = document.getElementById('log-console');
+            const time = new Date().toLocaleTimeString();
+            let colorClass = 'log-system';
+            if (type === 'DB') colorClass = 'log-db';
+            if (type === 'REDIS') colorClass = 'log-redis';
+
+            let dataHtml = '';
+            if (dataObj) {
+                // Gelen verinin gerçek olduğunu kanıtlamak için ekrana basıyoruz
+                dataHtml = `<span class="log-data">↳ Çekilen Gerçek Veri: ID=${dataObj.id}, İsim="${dataObj.name}", Email="${dataObj.email}"</span>`;
+            }
+
+            const html = `
+                <div class="log-entry">
+                    <span class="log-time">${time}</span>
+                    <span class="${colorClass}">[${type}]</span> ${message}
+                    ${dataHtml}
+                </div>
+            `;
+            consoleEl.innerHTML += html;
+            consoleEl.scrollTop = consoleEl.scrollHeight; // Auto-scroll
+        }
+
+        async function fetchResult(url) {
+            try {
+                const response = await fetch(url);
+                return await response.json();
+            } catch (error) {
+                console.error("Hata:", error);
+                return { durationMs: 0 };
+            }
+        }
+
+        function animateCounter(elementId, targetValue, duration) {
+            const obj = document.getElementById(elementId);
+            let start = null;
+            const step = (timestamp) => {
+                if (!start) start = timestamp;
+                const progress = Math.min((timestamp - start) / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                obj.innerHTML = Math.floor(easeOut * targetValue);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    obj.innerHTML = targetValue;
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        async function startRace() {
+            const btn = document.getElementById('start-btn');
+            const dbBar = document.getElementById('db-bar');
+            const redisBar = document.getElementById('redis-bar');
+            
+            btn.disabled = true;
+            btn.innerHTML = 'İstekler İşleniyor... ⏳';
+            dbBar.style.width = '0%';
+            redisBar.style.width = '0%';
+            document.getElementById('db-time').innerText = '0';
+            document.getElementById('redis-time').innerText = '0';
+            
+            appendLog('SYSTEM', `Ağır "Full Table Scan" (Tüm Tablo Tarama) isteği tetiklendi: Anahtar kelime '${emailPart}'`, null);
+
+            const dbPromise = fetchResult(`/api/db-heavy/${emailPart}`);
+            const redisPromise = fetchResult(`/api/cache-heavy/${emailPart}`);
+
+            // DB ve REDIS ayrı ayrı bekleniyor, hangisi erken biterse o log basacak
+            redisPromise.then(res => {
+                appendLog('REDIS', `İstek tamamlandı! 100 ardışık sorgu Cache üzerinden yanıtlandı.`, res.sampleData);
+                redisBar.style.width = '100%';
+                animateCounter('redis-time', res.durationMs, 500); 
+            });
+
+            dbPromise.then(res => {
+                appendLog('DB', `İstek tamamlandı! 100 ardışık sorgu Fiziksel Disk üzerinden yanıtlandı.`, res.sampleData);
+                dbBar.style.width = '100%';
+                animateCounter('db-time', res.durationMs, 2000); 
+            });
+
+            await Promise.all([dbPromise, redisPromise]);
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.13 15.57a10 10 0 1 0 4.43-12.83l-5.57 5.57"/></svg> Analizi Tekrarla`;
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
