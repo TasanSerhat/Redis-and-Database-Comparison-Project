@@ -2,12 +2,12 @@
 
 Bu proje, geleneksel disk tabanlı veritabanı sorguları (Disk I/O) ile bellek içi (In-Memory) Redis Cache kullanımının performans farkını canlı ve interaktif bir şekilde karşılaştırmak amacıyla hazırlanmıştır. Teknik sunumlar veya eğitim amaçlı kullanıma oldukça uygundur.
 
-## 🚀 Proje Hakkında
+## Proje Hakkında
 Uygulama, sistem ayağa kalkarken H2 fiziksel veritabanına (dosya tabanlı) 50.000 adet test kullanıcısı (Big Data) kaydeder. Ardından, index'i olmayan (Full Table Scan gerektiren) ağır bir e-posta arama sorgusu yapılarak, veritabanının gerçek senaryolarda nasıl yavaşladığı simüle edilir. 
 
 Aynı ağır sorgu Spring Boot'un `@Cacheable` anotasyonu kullanılarak Redis üzerinden de geçirilir. Uygulamanın içerisine gömülü olan şık ve animasyonlu Web Dashboard'u sayesinde, veritabanının yavaşlığına karşı Redis'in hızı adeta bir "yarış" şeklinde görselleştirilir.
 
-## 🛠️ Kullanılan Teknolojiler
+## Kullanılan Teknolojiler
 * **Java 17 & Spring Boot 3.2.x**
 * **Spring Data JPA & Hibernate**
 * **Spring Data Redis**
@@ -15,12 +15,12 @@ Aynı ağır sorgu Spring Boot'un `@Cacheable` anotasyonu kullanılarak Redis ü
 * **Lombok**
 * **Vanilla HTML / CSS (Glassmorphism) / JavaScript** (Frontend)
 
-## 🏎️ Öne Çıkan Özellikler
+## Öne Çıkan Özellikler
 * **Canlı Dashboard:** Herhangi bir JS framework'ü kurmaya gerek kalmadan doğrudan Spring Boot üzerinden hizmet veren animasyonlu, koyu temalı (dark mode) performans ekranı.
 * **Gerçek Veri Akışı (Log Konsolu):** Dashboard'un altındaki terminal görünümlü konsolda, sadece sürelerin değil; o an DB'den veya Redis'ten çekilen gerçek verilerin (ID, İsim vb.) canlı akışı.
 * **İkna Edici Kanıtlar:** `spring.jpa.show-sql=true` ayarı sayesinde, DB testi yapıldığında IDE konsolunda akan yüzlerce satırlık SQL sorgusunun aksine, Redis testinde konsolun tamamen sessiz kalmasının gösterimi.
 
-## 📋 Kurulum ve Çalıştırma
+## Kurulum ve Çalıştırma
 
 ### Gereksinimler
 * Java 17 veya üzeri
